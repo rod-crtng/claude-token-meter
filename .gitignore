@@ -4,3 +4,8 @@ __pycache__/
 .pytest_cache/
 config.local.json
 Iniciar.lnk
+
+# segredos - nunca versionar (padrao do CRTNG_SKILLS)
+*.env
+.env*
+!.env.example
