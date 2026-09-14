@@ -1,4 +1,4 @@
-from claude_token_meter.geometry import fallback_pos, rect_visible
+from claude_token_meter.geometry import fallback_pos, popup_pos, rect_visible
 
 PRIMARY = (0, 0, 1920, 1040)          # availableGeometry da tela primaria
 SECOND_LEFT = (-1920, 0, 1920, 1040)  # monitor secundario a esquerda (coords negativas)
@@ -38,3 +38,26 @@ def test_fallback_cai_dentro_da_primeira_tela():
     # canto superior direito, com margem
     assert x + 300 <= PRIMARY[0] + PRIMARY[2]
     assert y >= PRIMARY[1]
+
+
+TELA_RODRIGO = (0, 0, 1920, 1032)  # availableGeometry real: barra de tarefas de 48 px embaixo
+
+
+def test_popup_abre_acima_do_clique_e_centralizado():
+    # clique no icone (y 1050, dentro da barra de tarefas): popup fica colado no limite util
+    assert popup_pos((1650, 1050), 300, 42, TELA_RODRIGO) == (1500, 990)
+
+
+def test_popup_nao_passa_da_borda_direita():
+    x, _ = popup_pos((1910, 1050), 300, 42, TELA_RODRIGO)
+    assert x == 1620
+
+
+def test_popup_abre_abaixo_quando_a_barra_esta_em_cima():
+    tela = (0, 48, 1920, 1032)
+    assert popup_pos((1650, 20), 300, 42, tela) == (1500, 48)
+
+
+def test_popup_em_monitor_de_coordenada_negativa():
+    tela = (-1440, 0, 1440, 2512)
+    assert popup_pos((-100, 2530), 300, 42, tela) == (-300, 2470)

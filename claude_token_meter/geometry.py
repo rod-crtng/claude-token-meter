@@ -1,9 +1,8 @@
 """Geometria pura da janela vs telas (sem PySide6, pra ser testavel).
 
-Existe por causa do bug "widget some depois de um tempo": a janela pode ser
-fechada por WM_CLOSE de terceiros ou ficar fora de tela quando um monitor
-(ex.: o secundario em coordenada negativa) desliga. O watchdog no main usa
-estas funcoes pra decidir quando reexibir/reposicionar.
+rect_visible/fallback_pos existiram pro vigia da barra flutuante (widget que
+sumia por WM_CLOSE de terceiros ou monitor desligado). Desde a bandeja a barra
+e um popup e o vigia saiu; popup_pos posiciona o popup junto do clique.
 """
 
 Rect = tuple[int, int, int, int]  # x, y, w, h
@@ -24,3 +23,18 @@ def fallback_pos(screens: list[Rect], w: int, h: int, margin: int = 16) -> tuple
     """Posicao segura: canto superior direito da primeira tela (primaria)."""
     sx, sy, sw, sh = screens[0]
     return sx + sw - w - margin, sy + margin
+
+
+def popup_pos(anchor: tuple[int, int], w: int, h: int, screen: Rect,
+              gap: int = 8) -> tuple[int, int]:
+    """Popup centrado no x do clique, acima dele (ou abaixo, se a barra de
+    tarefas estiver em cima) e sempre inteiro dentro da area util da tela."""
+    ax, ay = anchor
+    sx, sy, sw, sh = screen
+    x = ax - w // 2
+    y = ay - gap - h
+    if y < sy:
+        y = ay + gap
+    x = max(sx, min(x, sx + sw - w))
+    y = max(sy, min(y, sy + sh - h))
+    return x, y
