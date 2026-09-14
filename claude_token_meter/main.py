@@ -5,15 +5,15 @@ from pathlib import Path
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
 ICON_PATH = Path(__file__).parent / "assets" / "icon.ico"
 
 from claude_token_meter import config as cfg
-from claude_token_meter import geometry as geo
 from claude_token_meter import usage_client as uc
 from claude_token_meter import autostart
 from claude_token_meter import status as st
+from claude_token_meter.tray import MeterTray
 from claude_token_meter.widget import MeterWidget
 
 log = logging.getLogger("claude_token_meter")
@@ -67,12 +67,15 @@ def main():
 
     config = cfg.load()
     app = QApplication(sys.argv)
-    # so o "Sair" do menu encerra; fechar a janela (WM_CLOSE de fora) nao
+    # o popup fecha ao clicar fora e o icone da bandeja nao conta como janela:
+    # sem isto o app encerraria no primeiro fechamento do popup
     app.setQuitOnLastWindowClosed(False)
     if ICON_PATH.exists():
         app.setWindowIcon(QIcon(str(ICON_PATH)))
     log.info("iniciado")
     app.aboutToQuit.connect(lambda: log.info("encerrando (event loop terminou)"))
+    if not QSystemTrayIcon.isSystemTrayAvailable():
+        log.warning("bandeja do sistema indisponivel — o icone pode nao aparecer")
 
     def toggle_autostart():
         if autostart.is_enabled():
@@ -83,8 +86,11 @@ def main():
             config["autostart"] = True
         cfg.save(config)
 
-    widget = MeterWidget(config, app.quit, toggle_autostart, autostart.is_enabled)
-    widget.show()
+    widget = MeterWidget(config)
+    tray = MeterTray(config, widget, app.quit, toggle_autostart, autostart.is_enabled)
+    tray.show()
+    # sem hide explicito o Windows deixa o icone fantasma ate passar o mouse
+    app.aboutToQuit.connect(tray.hide)
 
     if config.get("autostart") and not autostart.is_enabled():
         autostart.enable()
@@ -102,10 +108,7 @@ def main():
             display = state["last_ok"]
         else:
             display = snap  # expired/error, or nothing good yet -> show the state
-        # persist any drag move
-        if (config["window"]["x"], config["window"]["y"]) != (widget.x(), widget.y()):
-            config["window"]["x"], config["window"]["y"] = widget.x(), widget.y()
-            cfg.save(config)
+        tray.update_snapshot(display)
         widget.update_snapshot(display)
 
     tick()
@@ -113,33 +116,12 @@ def main():
     timer.timeout.connect(tick)
     timer.start(config["refresh_seconds"] * 1000)
 
-    def _screen_rects():
-        return [
-            (g.x(), g.y(), g.width(), g.height())
-            for g in (s.availableGeometry() for s in app.screens())
-        ]
-
     # poll rapido e barato (le so um arquivo local) pra bolinha reagir ~na hora,
-    # desacoplado do poll da API de uso (que fica em refresh_seconds)
+    # desacoplado do poll da API de uso (que fica em refresh_seconds).
+    # Nao ha mais vigia de janela: o popup escondido e o estado normal, e o Qt
+    # recoloca o icone sozinho se o Explorer reiniciar (TaskbarCreated).
     def status_tick():
         widget.update_status(st.read_status())
-        # watchdog da janela: terceiros mandam WM_CLOSE (instalador, taskkill
-        # sem /f) ou o monitor da janela desliga — reexibe/reposiciona.
-        # Nao reexibe durante o "Sair" (senao brigaria com o encerramento).
-        if widget._quitting:
-            return
-        if not widget.isVisible():
-            log.warning("janela sumiu (fechada por fora) — reexibindo")
-            widget.show()
-        screens = _screen_rects()
-        fg = widget.frameGeometry()
-        if screens and not geo.rect_visible((fg.x(), fg.y(), fg.width(), fg.height()), screens):
-            nx, ny = geo.fallback_pos(screens, fg.width(), fg.height())
-            log.warning(
-                "janela fora das telas em (%s,%s) — movendo pra (%s,%s)",
-                fg.x(), fg.y(), nx, ny,
-            )
-            widget.move(nx, ny)
 
     status_tick()
     status_timer = QTimer()
