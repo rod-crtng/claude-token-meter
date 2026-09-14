@@ -49,12 +49,16 @@ Antes de tudo, integrar o commit `d090efc` do upstream (instância única via na
   - sem dado ou `None`: `--` em `MUTED`
   - as cores são strings hex; o Qt só entra na camada de apresentação
 
+- `pct_int(pct) -> int`: `int(pct * 100 + 1e-9)`. Corrige um defeito que já existe: `int(0.29 * 100)`
+  dá `28` no Python, então o medidor mostrava 1 ponto a menos em alguns valores.
+- `tooltip_text(None, …)` → `""` (antes do primeiro tick).
+
 As constantes de palavra/frase de estado (`_STATUS_WORD`, `_STATUS_TIP`) e as cores migram do
 `widget.py` pra cá, pra lógica e apresentação lerem da mesma fonte.
 
 ### `tray.py` (novo · apresentação fina · sem teste unitário)
 
-- `render_icon(texto, cor) -> QIcon`: pixmaps 16, 24 e 32 px, fundo escuro arredondado (`BG`),
+- `render_icon(texto, cor) -> QIcon`: pixmaps 16, 20, 24 e 32 px, fundo escuro arredondado (`BG`),
   número em Segoe UI Bold na cor dada, centralizado.
 - `MeterTray(QSystemTrayIcon)`:
   - `update_snapshot(snap)` → ícone + tooltip via `labels`
