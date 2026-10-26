@@ -17,11 +17,15 @@ else
   UV="$HOME/.local/bin/uv"
 fi
 
-echo "== Criando o ambiente Python (.venv)"
-"$UV" venv --python 3.12 .venv
+# roda de novo a cada atualizacao (atualizar.command): so cria o venv se faltar
+if [ ! -x .venv/bin/python ]; then
+  echo "== Criando o ambiente Python (.venv)"
+  "$UV" venv --python 3.12 .venv
+fi
+echo "== Instalando as dependencias"
 "$UV" pip install --python .venv/bin/python -r requirements.txt
 
-chmod +x iniciar.command
+chmod +x iniciar.command atualizar.command
 # arquivo baixado pelo navegador vem com quarentena e o duplo clique e barrado
 xattr -dr com.apple.quarantine "$DIR" 2>/dev/null || true
 

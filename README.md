@@ -34,13 +34,16 @@ Windows, sair.
 O icone mora na **barra de menu** (alto da tela, perto do relogio). No Terminal:
 
 ```
-cd ~ && curl -L -o tm.zip https://github.com/rod-crtng/claude-token-meter/archive/refs/heads/mac.zip \
-  && unzip -q tm.zip && rm tm.zip && mv claude-token-meter-mac claude-token-meter \
-  && cd claude-token-meter && bash instalar_mac.sh
+git clone --branch mac https://github.com/rod-crtng/claude-token-meter.git ~/claude-token-meter \
+  && cd ~/claude-token-meter && bash instalar_mac.sh
 ```
 
-Pra reinstalar: Sair pelo menu do icone e apagar `~/claude-token-meter` antes
-(senao o `mv` aninha a pasta nova dentro da velha).
+Se o Mac nunca usou `git`, o primeiro comando abre a instalacao das
+"Ferramentas de Linha de Comando" da Apple: aceitar, esperar terminar e colar a
+linha de novo.
+
+**Atualizar:** duplo clique em `atualizar.command` (faz `git pull` e roda o
+instalador de novo; o `.venv` so e criado se faltar, os hooks nao duplicam).
 
 O `instalar_mac.sh` instala o `uv` se faltar, cria o `.venv` com Python 3.12 (o
 `python3` do macOS e 3.9 e nao serve), liga os hooks das bolinhas no
