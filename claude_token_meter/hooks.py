@@ -17,9 +17,16 @@ from pathlib import Path
 STATES = ("working", "waiting", "free")
 
 
-def status_path() -> Path:
-    base = os.environ.get("APPDATA") or str(Path.home())
-    return Path(base) / "claude-token-meter" / "status.json"
+def status_path(platform=None) -> Path:
+    # mesma regra de config.data_dir, duplicada de proposito (sem import do pacote)
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        base = Path(appdata) / "claude-token-meter"
+    elif (platform or sys.platform) == "darwin":
+        base = Path.home() / "Library" / "Application Support" / "claude-token-meter"
+    else:
+        base = Path.home() / "claude-token-meter"
+    return base / "status.json"
 
 
 def main() -> int:

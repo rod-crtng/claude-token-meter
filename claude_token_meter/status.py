@@ -10,12 +10,13 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
+from claude_token_meter.config import data_dir
+
 STATES = ("working", "waiting", "free")
 
 
-def default_status_path() -> Path:
-    base = os.environ.get("APPDATA") or str(Path.home())
-    return Path(base) / "claude-token-meter" / "status.json"
+def default_status_path(platform: str | None = None) -> Path:
+    return data_dir(platform) / "status.json"
 
 
 def write_status(state: str, path: Path | None = None) -> None:

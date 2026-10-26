@@ -1,4 +1,3 @@
-import ctypes
 import logging
 import sys
 from pathlib import Path
@@ -12,27 +11,40 @@ ICON_PATH = Path(__file__).parent / "assets" / "icon.ico"
 from claude_token_meter import config as cfg
 from claude_token_meter import usage_client as uc
 from claude_token_meter import autostart
+from claude_token_meter import singleton
 from claude_token_meter import status as st
 from claude_token_meter.tray import MeterTray
 from claude_token_meter.widget import MeterWidget
 
 log = logging.getLogger("claude_token_meter")
 
-_SINGLETON_HANDLE = []  # segura o handle do mutex vivo pela vida do processo
-
-
 def _acquire_singleton(name: str = "claude-token-meter-singleton") -> bool:
-    """Instancia unica no Windows via named mutex do kernel — liberado quando o
-    processo morre (crash nao deixa lock preso). Retorna False se ja ha outra
-    instancia. Precisa rodar ANTES de subir o Qt: um QApplication ja construido
-    segura threads e o processo nao encerra no return."""
-    kernel32 = ctypes.windll.kernel32
-    handle = kernel32.CreateMutexW(None, False, name)
-    ERROR_ALREADY_EXISTS = 183
-    if not handle or kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
-        return False
-    _SINGLETON_HANDLE.append(handle)
-    return True
+    """Instancia unica (mutex no Windows, flock no macOS) — liberada quando o
+    processo morre. Retorna False se ja ha outra instancia. Precisa rodar ANTES
+    de subir o Qt: um QApplication ja construido segura threads e o processo
+    nao encerra no return."""
+    return singleton.acquire(name, cfg.data_dir() / "instance.lock")
+
+
+def _hide_dock_icon() -> None:
+    """macOS: politica Accessory (como app de barra de menu) — sem icone no
+    Dock. Via objc/ctypes pra nao depender do pyobjc; se falhar, so fica o
+    icone no Dock. Desligavel com mac_hide_dock=false no config."""
+    import ctypes
+    import ctypes.util
+    objc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("objc"))
+    objc.objc_getClass.restype = ctypes.c_void_p
+    objc.objc_getClass.argtypes = [ctypes.c_char_p]
+    objc.sel_registerName.restype = ctypes.c_void_p
+    objc.sel_registerName.argtypes = [ctypes.c_char_p]
+    send_obj = ctypes.cast(objc.objc_msgSend, ctypes.CFUNCTYPE(
+        ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p))
+    send_long = ctypes.cast(objc.objc_msgSend, ctypes.CFUNCTYPE(
+        ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long))
+    app = send_obj(objc.objc_getClass(b"NSApplication"),
+                   objc.sel_registerName(b"sharedApplication"))
+    ACCESSORY = 1  # NSApplicationActivationPolicyAccessory
+    send_long(app, objc.sel_registerName(b"setActivationPolicy:"), ACCESSORY)
 
 
 def _setup_logging() -> None:
@@ -70,6 +82,11 @@ def main():
     # o popup fecha ao clicar fora e o icone da bandeja nao conta como janela:
     # sem isto o app encerraria no primeiro fechamento do popup
     app.setQuitOnLastWindowClosed(False)
+    if sys.platform == "darwin" and config.get("mac_hide_dock", True):
+        try:
+            _hide_dock_icon()
+        except Exception:
+            log.exception("nao consegui tirar o icone do Dock — segue com ele")
     if ICON_PATH.exists():
         app.setWindowIcon(QIcon(str(ICON_PATH)))
     log.info("iniciado")

@@ -1,3 +1,4 @@
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -5,6 +6,7 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QCursor, QFont, QGuiApplication, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
+from claude_token_meter import autostart
 from claude_token_meter import labels
 
 _BG = QColor(20, 22, 26, 235)
@@ -23,7 +25,8 @@ def render_icon(text: str, color: str) -> QIcon:
         p.setPen(Qt.NoPen)
         p.setBrush(_BG)
         p.drawRoundedRect(QRectF(0, 0, size, size), size * 0.2, size * 0.2)
-        font = QFont("Segoe UI")
+        # fora do Windows, a fonte do sistema (Segoe UI nao existe no macOS)
+        font = QFont("Segoe UI") if sys.platform == "win32" else QFont()
         font.setBold(True)
         font.setPixelSize(max(8, round(size * 0.66)))
         p.setFont(font)
@@ -48,7 +51,7 @@ class MeterTray(QSystemTrayIcon):
 
         self._menu = QMenu()
         self._act_autostart = self._menu.addAction(
-            "Iniciar com o Windows", on_toggle_autostart
+            autostart.menu_label(), on_toggle_autostart
         )
         if is_autostart_enabled is not None:
             # checkable pra dar feedback do estado atual

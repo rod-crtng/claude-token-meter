@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from copy import deepcopy
 from pathlib import Path
 
@@ -11,12 +12,24 @@ DEFAULTS = {
     "credentials_path": None,  # None -> ~/.claude/.credentials.json
     "window": {"x": None, "y": None, "opacity": 0.92},
     "autostart": True,
+    "mac_hide_dock": True,  # so macOS: tira o icone do Dock (vive na barra de menu)
 }
 
 
+def data_dir(platform: str | None = None) -> Path:
+    """Pasta de config/status/log. APPDATA vem primeiro (Windows igual a antes);
+    no macOS, sem APPDATA, o lugar certo e Application Support. hooks.py
+    duplica esta regra (e standalone) — test_mac confere a paridade."""
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        return Path(appdata) / "claude-token-meter"
+    if (platform or sys.platform) == "darwin":
+        return Path.home() / "Library" / "Application Support" / "claude-token-meter"
+    return Path.home() / "claude-token-meter"
+
+
 def default_config_path() -> Path:
-    base = os.environ.get("APPDATA") or str(Path.home())
-    return Path(base) / "claude-token-meter" / "config.json"
+    return data_dir() / "config.json"
 
 
 def _merge(base: dict, override: dict) -> dict:

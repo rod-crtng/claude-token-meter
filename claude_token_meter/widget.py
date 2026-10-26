@@ -1,3 +1,4 @@
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -98,7 +99,14 @@ class MeterWidget(QWidget):
             p.drawRoundedRect(wfill, 1.75, 1.75)
 
         p.setPen(TEXT if ok else MUTED)
-        p.setFont(QFont("Segoe UI", 9, QFont.DemiBold))
+        if sys.platform == "win32":
+            p.setFont(QFont("Segoe UI", 9, QFont.DemiBold))
+        else:
+            # macOS: fonte do sistema; 9pt la sai menor (72 dpi), entao em px
+            f = QFont()
+            f.setPixelSize(12)
+            f.setWeight(QFont.DemiBold)
+            p.setFont(f)
         # reserva a faixa da direita pras 3 bolinhas
         dots_span = _DOT_GAP * 2 + _DOT_R * 2 + _DOT_RIGHT + 6
         p.drawText(
