@@ -29,6 +29,41 @@ sessao e semanal com o tempo pro reset. Clique esquerdo abre a barra completa
 logo acima do relogio (some ao clicar fora); clique direito: iniciar com o
 Windows, sair.
 
+## macOS
+
+O icone mora na **barra de menu** (alto da tela, perto do relogio). No Terminal:
+
+```
+cd ~ && curl -L -o tm.zip https://github.com/rod-crtng/claude-token-meter/archive/refs/heads/mac.zip \
+  && unzip -q tm.zip && rm tm.zip && mv claude-token-meter-mac claude-token-meter \
+  && cd claude-token-meter && bash instalar_mac.sh
+```
+
+O `instalar_mac.sh` instala o `uv` se faltar, cria o `.venv` com Python 3.12 (o
+`python3` do macOS e 3.9 e nao serve), liga os hooks das bolinhas no
+`~/.claude/settings.json` (com backup em `settings.json.bak-tokenmeter`) e abre o
+medidor. Depois, `iniciar.command` (duplo clique) abre de novo; o "Iniciar com o
+Mac" e um LaunchAgent em `~/Library/LaunchAgents/com.crtng.claude-token-meter.plist`.
+
+Diferencas do Windows:
+- **Token:** o Claude Code guarda as credenciais no **Chaveiro**, nao em
+  `~/.claude/.credentials.json`. O medidor le pelo `security` (servico
+  `Claude Code-credentials`), guarda o token na memoria e so rele apos 401/403.
+  Na primeira leitura o macOS pode perguntar: clicar **Sempre Permitir**. Se
+  negar, ele so tenta de novo depois de 10 minutos.
+- **Dados:** `~/Library/Application Support/claude-token-meter/` (config, status, log).
+- **Dock:** o medidor sai do Dock (`mac_hide_dock` no config). Se o popup nao
+  abrir ao clicar no icone, ponha `"mac_hide_dock": false` e reabra.
+
+Primeiro uso — conferir no aparelho:
+1. `security find-generic-password -s "Claude Code-credentials"` acha o item
+   (sem `-w`, nao le o segredo). Se nao achar: `security dump-keychain | grep -i claude`
+   e ajustar `KEYCHAIN_SERVICE`.
+2. O icone aparece na barra de menu, legivel no tema claro e no escuro.
+3. Clique no icone abre a barra; clicar fora fecha.
+4. O dialogo do Chaveiro aparece no maximo uma vez.
+5. `.venv/bin/python -m pytest -q` — no Mac roda tambem o teste da trava (`flock`).
+
 ## O que a barra mostra
 
 - `NN%` + `reset 4h28` — utilizacao da janela de sessao de 5h e quanto falta
