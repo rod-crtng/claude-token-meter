@@ -35,7 +35,9 @@ else
 fi
 
 echo "== Ligando as bolinhas de estado (hooks do Claude Code)"
-.venv/bin/python -m claude_token_meter.install_hooks
+# as bolinhas sao secundarias: falha aqui nao pode impedir o medidor de abrir
+.venv/bin/python -m claude_token_meter.install_hooks \
+  || echo "   AVISO: bolinhas nao ligadas; o medidor funciona sem elas."
 
 echo "== Abrindo o medidor"
 pkill -f "claude_token_meter.main" 2>/dev/null || true

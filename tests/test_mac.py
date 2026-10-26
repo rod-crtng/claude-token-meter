@@ -148,6 +148,15 @@ def test_arquivo_de_credenciais_vence_o_chaveiro(mac, monkeypatch, tmp_path):
     assert run.calls == []
 
 
+def test_arquivo_sem_login_cai_no_chaveiro(mac, monkeypatch, tmp_path):
+    # arquivo so com mcpOAuth (formato real) nao pode esconder o Chaveiro
+    creds = tmp_path / ".credentials.json"
+    creds.write_text(json.dumps({"mcpOAuth": {}}), encoding="utf-8")
+    monkeypatch.setattr(uc, "default_credentials_path", lambda: creds)
+    monkeypatch.setattr(uc.subprocess, "run", _Run(json.dumps(CREDS)))
+    assert uc.read_token() == "sk-ant-oat-mac"
+
+
 def test_caminho_explicito_nao_cai_no_chaveiro(mac, monkeypatch, tmp_path):
     run = _Run(json.dumps(CREDS))
     monkeypatch.setattr(uc.subprocess, "run", run)

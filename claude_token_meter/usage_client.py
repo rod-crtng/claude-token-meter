@@ -89,11 +89,12 @@ def read_token(path: Path | None = None) -> str | None:
     explicit = path is not None
     path = Path(path) if path else default_credentials_path()
     try:
-        return _token_from_json(path.read_text(encoding="utf-8"))
+        token = _token_from_json(path.read_text(encoding="utf-8"))
     except OSError:
-        pass
-    if explicit or _PLATFORM != "darwin":
-        return None
+        token = None
+    # arquivo sem login (ex.: so mcpOAuth) nao pode esconder o Chaveiro no macOS
+    if token is not None or explicit or _PLATFORM != "darwin":
+        return token
     if _keychain_cache["token"] is None:
         failed_at = _keychain_cache["failed_at"]
         if failed_at is not None and time.monotonic() - failed_at < KEYCHAIN_RETRY_SECONDS:

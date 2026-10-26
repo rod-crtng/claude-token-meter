@@ -39,6 +39,9 @@ cd ~ && curl -L -o tm.zip https://github.com/rod-crtng/claude-token-meter/archiv
   && cd claude-token-meter && bash instalar_mac.sh
 ```
 
+Pra reinstalar: Sair pelo menu do icone e apagar `~/claude-token-meter` antes
+(senao o `mv` aninha a pasta nova dentro da velha).
+
 O `instalar_mac.sh` instala o `uv` se faltar, cria o `.venv` com Python 3.12 (o
 `python3` do macOS e 3.9 e nao serve), liga os hooks das bolinhas no
 `~/.claude/settings.json` (com backup em `settings.json.bak-tokenmeter`) e abre o
@@ -57,7 +60,8 @@ Diferencas do Windows:
 
 Primeiro uso — conferir no aparelho:
 1. `security find-generic-password -s "Claude Code-credentials"` acha o item
-   (sem `-w`, nao le o segredo). Se nao achar: `security dump-keychain | grep -i claude`
+   (sem `-w`, nao le o segredo) e `ls -la ~/.claude/` mostra se existe arquivo de
+   credenciais (se existir com login, ele vence o Chaveiro). Se nao achar: `security dump-keychain | grep -i claude`
    e ajustar `KEYCHAIN_SERVICE`.
 2. O icone aparece na barra de menu, legivel no tema claro e no escuro.
 3. Clique no icone abre a barra; clicar fora fecha.
